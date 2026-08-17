@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线图片格式转换器</title>
+    <style>
+        body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 90%; }
+        .drop-zone { border: 2px dashed #d1d5db; border-radius: 0.5rem; padding: 2rem; margin: 1rem 0; cursor: pointer; transition: 0.3s; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #3b82f6; background: #eff6ff; }
+        #preview { max-width: 100%; max-height: 300px; margin: 1rem 0; display: none; }
+        select, button { padding: 0.5rem 1rem; border-radius: 0.375rem; border: 1px solid #d1d5db; font-size: 1rem; }
+        button { background: #3b82f6; color: white; border: none; cursor: pointer; transition: 0.3s; margin-left: 0.5rem; }
+        button:hover { background: #2563eb; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .info { font-size: 0.875rem; color: #6b7280; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🖼️ 图片格式转换</h1>
+        <p style="color: #6b7280;">所有处理在本地完成，隐私安全</p>
+        <div class="drop-zone" id="dropZone">
+            <p>📤 点击或拖拽图片到此处</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+        <img id="preview" alt="预览">
+        <div style="margin: 1rem 0;">
+            <select id="formatSelect">
+                <option value="image/png">PNG</option>
+                <option value="image/jpeg">JPEG</option>
+                <option value="image/webp">WebP</option>
+                <option value="image/bmp">BMP</option>
+            </select>
+            <button id="convertBtn">转换并下载</button>
+        </div>
+        <p class="info">支持 PNG, JPEG, WebP, BMP 等格式互转</p>
+    </div>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const formatSelect = document.getElementById('formatSelect');
+        const convertBtn = document.getElementById('convertBtn');
+        let currentFile = null;
+
+        // 上传与拖拽逻辑
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return alert('请上传图片文件');
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => { preview.src = e.target.result; preview.style.display = 'block'; };
+            reader.readAsDataURL(file);
+            convertBtn.disabled = false;
+        }
+
+        // 核心转换逻辑
+        convertBtn.addEventListener('click', () => {
+            if (!currentFile) return;
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const mimeType = formatSelect.value;
+                const extension = mimeType.split('/')[1];
+                canvas.toBlob((blob) => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `converted.${extension}`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                }, mimeType, 0.92);
+            };
+            img.src = preview.src;
+        });
+    </script>
+</body>
+</html>
